@@ -37,8 +37,7 @@ def mat(r):
     if r['area'] < 450 and not t.get('name'): return (SID[rnd % 8] if rnd % 10 < 7 else CBR[rnd % 3]), '#efece4', 0, 'Generic', 'generic'
     return (CBR+SID)[rnd % 11], '#d8d4ca', 0 if bt != 'retail' else 1, 'Generic', 'generic'
 # ---- buildings.json ----------------------------------------------------------
-recs = []; rows = []; LN = json.load(open(WORK+'/lean.json'))
-enc = lambda v: int(np.clip(round((v+6)/12*255), 0, 255))
+recs = []; rows = []
 for i, r in enumerate(R):
     t = r['t']; cs = r['codes']; w, tr, st, note, conf = mat(r)
     lv = t.get('building:levels'); lest = False
@@ -51,37 +50,35 @@ for i, r in enumerate(R):
     nm = t.get('name'); nm = re.sub(r'\s*\([A-Z0-9-]{2,5}\)$', '', nm) if nm else None
     recs.append(dict(i=i, off=o, name=(None if o else nm), osm=nm, addr=adr if t.get('addr:street') else None, cat=cat(cs, t) if o or r['purdue'] else 'town', pu=bool(o or r['purdue']),
         h=round(r['h'], 1), hs=r['hsrc'], hn=r.get('hnote'), fl=fl, fe=lest, area=round(r['area']), wn=note, wc=conf, x=round(r['c'][0], 1), y=round(r['c'][1], 1), z=round(r['base']-Z0, 1), wall=w))
-    rows.append([*hexf(w), st, *hexf(tr), int(np.clip(fl, 1, 40)), int(np.clip(r['h']/max(fl, 1)*20, 40, 255)), rnd if False else i % 251, 1 if recs[-1]['pu'] else 0, 0, *(enc(LN['q'][k][0]+LN['res'].get(r['id'], [0, 0])[k]) for k in (0, 1)), int(np.clip((r['base']-Z0)/.3, 0, 255)), 0])
+    rows.append([*hexf(w), st, *hexf(tr), int(np.clip(fl, 1, 40)), int(np.clip(r['h']/max(fl, 1)*20, 40, 255)), rnd if False else i % 251, 1 if recs[-1]['pu'] else 0, 0, 0, 0, 0, 0])
 recs_js = [{k: v for k, v in x.items() if v not in (None, [], False)} for x in recs]
 json.dump(recs_js, open(OUT+'/buildings.json', 'w'), separators=(',', ':'))
 np.array(rows, 'u1').tofile(OUT+'/mats.bin')
 # ---- meshes: u16 positions (0.1 m, offset by X0/Y0/Z0) -----------------------
-def q(a): return np.clip(np.rint(a*10), 0, 65535).astype('u2')
-groups = {}; W = []; WB = []
-for i, r in enumerate(R):
-    if r['T'] is None: continue
-    T = r['T'].astype('f8'); c = T[:, :, :2].mean(1); tx = ((c[:, 0]-X0)//TILE).astype(int); ty = ((c[:, 1]-Y0)//TILE).astype(int)
-    for k in set(zip(tx.tolist(), ty.tolist())): groups.setdefault(k, []).append((i, T[(tx == k[0]) & (ty == k[1])]))
-    if len(r['W']): W.append(r['W']); WB.append(np.full(len(r['W']), i))
-meta = {}; P = []; ID = []; IX = []; vo = 0; io_ = 0
-for k in sorted(groups):
-    s = io_
-    for i, T in groups[k]:
-        v = np.c_[q(T[..., 0].ravel()-X0), q(T[..., 1].ravel()-Y0), q(T[..., 2].ravel()-Z0)]; u, inv = np.unique(v, axis=0, return_inverse=True); f = inv.reshape(-1, 3)
-        f = f[(f[:, 0] != f[:, 1]) & (f[:, 1] != f[:, 2]) & (f[:, 0] != f[:, 2])]
-        P.append(u); ID.append(np.full(len(u), i, 'u2')); IX.append((f+vo).astype('u4')); vo += len(u); io_ += f.size
-    meta[f'{k[0]}_{k[1]}'] = [s, io_-s]
-P = np.vstack(P); ID = np.concatenate(ID); IX = np.concatenate(IX).ravel()
-W = np.concatenate(W).astype('f8'); WB = np.concatenate(WB).astype('u2')
-v = np.stack([q(W[..., 0]-X0), q(W[..., 1]-Y0), q(W[..., 2]-Z0)], -1)
-wh = np.zeros(W.shape[:2]); wh[:, 2:] = W[:, 2:, 2]-W[:, :2, 2][:, ::-1]
-wu = np.stack([q(np.maximum(W[..., 3], 0)), q(W[..., 4]), q(wh)], -1)
 import gzip
+def q(a): return np.clip(np.rint(a*10), 0, 65535).astype('u2')
+GR = pickle.load(open(WORK+'/ground.pkl', 'rb'))
+def key(x, y): return ((y-Y0)//TILE).astype(int)*int((X1-X0)//TILE)+((x-X0)//TILE).astype(int)
+ok = [(i, r) for i, r in enumerate(R) if r['T'] is not None]
+T = np.concatenate([r['T'] for _, r in ok]).astype('f8'); TB = np.concatenate([np.full(len(r['T']), i) for i, r in ok]).astype('u2'); TC = np.concatenate([r['C'] for _, r in ok]).astype('u1')
+W = np.concatenate([r['W'] for _, r in ok]).astype('f8'); WB = np.concatenate([np.full(len(r['W']), i) for i, r in ok]).astype('u2')
+E = np.concatenate([r['E'] for _, r in ok if r['purdue'] or r['area'] > 260]).astype('f8')
+rp = np.stack([q(T[..., 0]-X0), q(T[..., 1]-Y0), q(T[..., 2]-Z0)], -1); wp = np.stack([q(W[..., 0]-X0), q(W[..., 1]-Y0), q(W[..., 2]-Z0)], -1)
+wu = np.stack([q(W[..., 3]), q(W[..., 4]), q(W[..., 5]+3), np.repeat(q(W[:, 2:3, 5]+3), 4, 1)], -1); ep = q(E-np.array([X0, Y0, Z0]*2))
+# ground: vertices shared per class, triangles grouped by tile
+V, C = GR['V'], GR['C']; k = key(V[..., 0].mean(1), V[..., 1].mean(1)); o = np.argsort(k, kind='stable'); V, C, k = V[o], C[o], k[o]
+gv = np.c_[q(V[..., 0].ravel()-X0), q(V[..., 1].ravel()-Y0), np.repeat(C, 3).astype('u2')]; gu, inv = np.unique(gv, axis=0, return_inverse=True); gi = inv.reshape(-1, 3); good = (gi[:, 0] != gi[:, 1]) & (gi[:, 1] != gi[:, 2]) & (gi[:, 0] != gi[:, 2]); gi, k = gi[good], k[good]
+nt = int((X1-X0)//TILE*(Y1-Y0)//TILE); gr_ = [[int(np.searchsorted(k, t)*3), int((np.searchsorted(k, t+1)-np.searchsorted(k, t))*3)] for t in range(nt)]
+L_ = GR['lamps']; lp = np.c_[q(L_[:, 1]-X0), q(L_[:, 2]-Y0), q(L_[:, 3] % (2*np.pi)*100), L_[:, 0].astype('u2')]
+gx = np.arange(X0, X1+1, 20); gy = np.arange(Y0, Y1+1, 20); GX, GY = np.meshgrid(gx, gy); TZ = q(sample(nd.gaussian_filter(dtm, 2), 2.0, GX, GY)-Z0)
+secs = dict(rp=rp, rb=TB, wp=wp, wu=wu, wb=WB, ep=ep, gv=gu, lp=lp, tz=TZ, rc=TC, gi=gi.astype('u4')); sizes = {}
 with gzip.open(OUT+'/geo.bin.gz', 'wb', 9) as f:
-    for a in (P.astype('u2'), ID.astype('u2'), v.astype('u2'), wu.astype('u2'), WB, np.zeros((-(P.size+ID.size+v.size+wu.size+WB.size)) % 2, 'u2'), IX.astype('u4')): f.write(a.tobytes())
-# ---- terrain, 10 m grid ------------------------------------------------------
-gx = np.arange(X0, X1+1, 10); gy = np.arange(Y0, Y1+1, 10); GX, GY = np.meshgrid(gx, gy); Z = sample(dtm, 2.0, GX, GY); q(Z-Z0).tofile(OUT+'/terrain.bin')
-if os.path.exists(OUT+'/geo.bin'): os.remove(OUT+'/geo.bin')
+    off = 0
+    for n, a_ in secs.items():
+        a_ = np.ascontiguousarray(a_.astype({'rc': 'u1', 'gi': 'u4'}.get(n, 'u2'))); pad = -off % 4; f.write(b'\0'*pad); off += pad; sizes[n] = [off, int(a_.size)]; f.write(a_.tobytes()); off += a_.nbytes
+for x in ('geo.bin', 'terrain.bin'):
+    if os.path.exists(OUT+'/'+x): os.remove(OUT+'/'+x)
+import shutil; shutil.rmtree(OUT+'/tex', ignore_errors=True)
 # ---- trees -------------------------------------------------------------------
 S = 1.0; nx = int((X1-X0)/S); ny = int((Y1-Y0)/S)
 tg = np.array(top).reshape(ny, 2, nx, 2).max((1, 3)); c = (np.mgrid[0:ny, 0:nx]+.5)*S; hag = tg-sample(dtm, 2.0, X0+c[1], Y0+c[0]); hag[tg < 0] = 0
@@ -94,18 +91,18 @@ for e in OSMD:     # keep roads, runways and water clear
     if e['type'] != 'way' or not g: continue
     if t.get('highway') in ('motorway', 'trunk', 'primary', 'secondary', 'tertiary', 'residential', 'unclassified', 'service') or t.get('aeroway') in ('runway', 'taxiway'): dr.line([((x-X0)/S, (y-Y0)/S) for x, y in pts(g)], fill=1, width=5 if t['highway' if 'highway' in t else 'aeroway'] in ('residential', 'service', 'unclassified') else 9)
 bm = np.array(im) > 0
-hag[bm | (hag > 34)] = 0; can = nd.uniform_filter((hag > 2.5).astype('f4'), 5); sm = nd.gaussian_filter(hag, 1.0); pk = (nd.maximum_filter(sm, 7) == sm) & (hag > 4) & (can > .35)
+hag[bm | (hag > 34)] = 0; cm = shapely.prepare(GR['clear']); can = nd.uniform_filter((hag > 2.5).astype('f4'), 5); sm = nd.gaussian_filter(hag, 1.0); pk = (nd.maximum_filter(sm, 7) == sm) & (hag > 4) & (can > .35)
 yy, xx = np.where(pk); hh = hag[yy, xx]; tx = X0+(xx+.5)*S; ty = Y0+(yy+.5)*S
 cx = np.array([[r['c'][0], r['c'][1]] for r in R if r['codes']]); from scipy.spatial import cKDTree
-d, _ = cKDTree(cx).query(np.c_[tx, ty]); rng = np.random.default_rng(1); keep = (d < 220) | (rng.random(len(d)) < .33); tx, ty, hh, d = tx[keep], ty[keep], hh[keep], d[keep]
+d, _ = cKDTree(cx).query(np.c_[tx, ty]); rng = np.random.default_rng(1); keep = (d < 220) | (rng.random(len(d)) < .33); keep &= ~shapely.contains_xy(GR['clear'], tx, ty); tx, ty, hh, d = tx[keep], ty[keep], hh[keep], d[keep]
 o = np.argsort(d); tx, ty, hh = tx[o], ty[o], hh[o]
 Tr = np.c_[q(tx-X0), q(ty-Y0), q(sample(dtm, 2.0, tx, ty)-Z0), q(hh)]; Tr.astype('u2').tofile(OUT+'/trees.bin')
-json.dump(dict(lean=LN['q'], x0=X0, y0=Y0, x1=X1, y1=Y1, z0=Z0, tile=TILE, nb=len(R), rv=len(P), ri=len(IX), wq=len(W), roofs=meta, tnx=len(gx), tny=len(gy), tstep=10, trees=len(Tr)), open(OUT+'/meta.json', 'w'), separators=(',', ':'))
+json.dump(dict(x0=X0, y0=Y0, x1=X1, y1=Y1, z0=Z0, tile=TILE, nb=len(R), sec=sizes, ground=gr_, classes=GR['names'], tnx=len(gx), tny=len(gy), tstep=20, trees=len(Tr)), open(OUT+'/meta.json', 'w'), separators=(',', ':'))
 # ---- reports -----------------------------------------------------------------
 used = {c for r in R for c in r['codes']}; un = [x for x in L if x['code'] not in used]
 open(ROOT+'/data/unmatched.md', 'w').write('# Listed Purdue buildings with no identified footprint\n\n'+'\n'.join(f"- {x['num']} {x['code']} {x['name']}" for x in un)+'\n')
 from collections import Counter
 print('listed', len(L), 'placed', len(used), 'unplaced', len(un), 'clickable official footprints', sum(1 for r in R if r['codes']))
 print('wall conf', Counter(x['wc'] for x in recs if x.get('off')), 'cats', Counter(x['cat'] for x in recs if x.get('off')))
-print('verts', len(P), 'tris', len(IX)//3, 'walls', len(W), 'trees', len(Tr)); [print(f, os.path.getsize(OUT+'/'+f)//1024, 'KB') for f in sorted(os.listdir(OUT)) if os.path.isfile(OUT+'/'+f)]
+print('roof tris', len(T), 'walls', len(W), 'edges', len(E), 'ground', len(gi), 'trees', len(Tr), 'lamps', len(lp)); [print(f, os.path.getsize(OUT+'/'+f)//1024, 'KB') for f in sorted(os.listdir(OUT)) if os.path.isfile(OUT+'/'+f)]
 print('unplaced:', ' '.join(x['code'] for x in un))

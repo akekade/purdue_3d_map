@@ -47,4 +47,4 @@ for k, n in ((3, 'dx'), (4, 'dy')):
     print(n, q.round(3), 'inliers', ok.mean().round(2), 'med res', np.median(np.abs(res)).round(2), 'med raw', np.median(np.abs(A[:, k])).round(2))
     Q.append(q.tolist()); RS.append(res)
 res = {s[0].split('|')[1]: [float(a), float(b)] for s, a, b in zip(S, *RS) if s[6] > 3.4 and abs(a) < 1.3 and abs(b) < 1.3}
-json.dump(dict(q=Q, res=res), open(WORK+'/lean.json', 'w')); print('per-building corrections', len(res))
+json.dump(dict(q=Q, res=res), open(ROOT+'/pipeline/lean.json', 'w')); print('per-building corrections', len(res))

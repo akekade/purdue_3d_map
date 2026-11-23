@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import { Data, groundAt } from './data';
+import type { Mats } from './materials';
 /** Thin structures that LiDAR cannot capture. Coordinates are local metres (east, north). */
-export function landmarks(d: Data, ids: Record<string, number>) {
+export function landmarks(d: Data, ids: Record<string, number>, mats: Mats) {
   const g = new THREE.Group(), pick: { geo: THREE.BufferGeometry; id: number }[] = [];
-  const mat = (c: number) => new THREE.MeshLambertMaterial({ color: c, flatShading: true, side: THREE.DoubleSide });
-  const brick = mat(0x96644b), stone = mat(0xe4dccb), roof = mat(0x6b4a35), steel = mat(0x45382f), slate = mat(0x4a4f57), dark = mat(0x23262a), white = mat(0xe6e1d6);
+  const all: { m: THREE.MeshToonMaterial; c: number }[] = [], mat = (c: number) => { const m = mats.toon({ color: c, side: THREE.DoubleSide }); all.push({ m, c }); return m; };
+  const brick = mat(0xb0705a), stone = mat(0xe4dccb), roof = mat(0x8a5f46), steel = mat(0x45382f), slate = mat(0x5f6675), dark = mat(0x23262a), white = mat(0xe6e1d6);
   const add = (geo: THREE.BufferGeometry, m: THREE.Material, x: number, y: number, z: number, ry = 0, id?: number) => {
     const o = new THREE.Mesh(geo, m); o.position.set(x, y, z); o.rotation.y = ry; o.castShadow = o.receiveShadow = true; g.add(o);
     if (id !== undefined) { o.updateMatrix(); pick.push({ geo: geo.clone().applyMatrix4(o.matrix), id }); }
@@ -21,7 +22,7 @@ export function landmarks(d: Data, ids: Record<string, number>) {
     for (const sx of [-1, 1]) for (const sz of [-1, 1]) { const px = sx * 2.1, pz = sz * 2.1; add(new THREE.BoxGeometry(1.1, 7, 1.1), stone, x + px * Math.cos(r) + pz * Math.sin(r), y + 37.5, z - px * Math.sin(r) + pz * Math.cos(r), r, id); }
     add(new THREE.BoxGeometry(5.8, 1, 5.8), stone, x, y + 41.2, z, r, id); add(new THREE.ConeGeometry(4, 6.4, 4), roof, x, y + 44.9, z, r + Math.PI / 4, id); add(new THREE.CylinderGeometry(.08, .12, 2, 5), steel, x, y + 48.6, z); }
   // Engineering Fountain: four curved concrete fins
-  { const x = 812.9, z = -338, y = groundAt(d, x, z); add(new THREE.CylinderGeometry(9, 9.4, .7, 36), stone, x, y + .3, z); add(new THREE.CylinderGeometry(8.2, 8.2, .1, 36), mat(0x5d8ea0), x, y + .68, z);
+  { const x = 812.9, z = -338, y = groundAt(d, x, z); add(new THREE.CylinderGeometry(9, 9.4, .7, 36), stone, x, y + .3, z); add(new THREE.CylinderGeometry(8.2, 8.2, .1, 36), mat(0x6fc3ea), x, y + .68, z);
     const s = new THREE.Shape(); s.moveTo(1, 0); s.lineTo(8.6, 0); s.quadraticCurveTo(3.4, 1.6, 2.3, 11.6); s.lineTo(1.4, 11.6); s.quadraticCurveTo(1.3, 5, 1, 0);
     for (let k = 0; k < 4; k++) { const e = new THREE.ExtrudeGeometry(s, { depth: 1.1, bevelEnabled: false, curveSegments: 10 }); e.translate(0, 0, -.55); add(e, white, x, y + .4, z, k * Math.PI / 2 + Math.PI / 4); }
     add(new THREE.ConeGeometry(.5, 10, 8), new THREE.MeshLambertMaterial({ color: 0xd8eef5, transparent: true, opacity: .65 }), x, y + 5.4, z); }
@@ -31,7 +32,10 @@ export function landmarks(d: Data, ids: Record<string, number>) {
     for (let t = 0; t <= 12; t++) { const f = t / 12, x = a[0] + (b[0] - a[0]) * f, z = -(a[1] + (b[1] - a[1]) * f); pts.push(new THREE.Vector3(x, groundAt(d, x, z) + 5 + Math.sin(f * Math.PI) * 2.4, z)); }
     for (const o of [0, .75]) { const c = new THREE.CatmullRomCurve3(pts.map(p => p.clone().setY(p.y + o))); add(new THREE.TubeGeometry(c, 24, .11, 5), steel, 0, 0, 0); } }
   // University Hall spire
-  { const x = 702, z = 46, y = groundAt(d, x, z); add(new THREE.BoxGeometry(4.6, 3.4, 4.6), mat(0xac735c), x, y + 22.6, z); add(new THREE.CylinderGeometry(1.9, 2.2, 3.4, 8), white, x, y + 26, z); add(new THREE.ConeGeometry(2.5, 9, 8), slate, x, y + 32, z); }
+  { const x = 702, z = 46, y = groundAt(d, x, z); add(new THREE.BoxGeometry(4.6, 3.4, 4.6), mat(0xb97660), x, y + 22.6, z); add(new THREE.CylinderGeometry(1.9, 2.2, 3.4, 8), white, x, y + 26, z); add(new THREE.ConeGeometry(2.5, 9, 8), slate, x, y + 32, z); }
+  // Armstrong Hall: pointed red canopy over the atrium
+  { const y = groundAt(d, 660, -612), s = new THREE.Shape([[632, 625], [692, 623], [660, 590]].map(p => new THREE.Vector2(p[0] - 660, p[1] - 612))); s.holes.push(new THREE.Path([[647, 618.5], [661, 618], [653, 613]].map(p => new THREE.Vector2(p[0] - 660, p[1] - 612))));
+    const e = new THREE.ExtrudeGeometry(s, { depth: 1, bevelEnabled: false }); e.rotateX(-Math.PI / 2); add(e, mat(0xb5553f), 660, y + 20.6, -612, 0, ids.ARMS); }
   // Slayter Center: suspended canopy on a steel tripod
   { const y = groundAt(d, 66, -692), id = ids.SCPA, V = (e: number, n: number, h: number) => new THREE.Vector3(e, y + h, -n), top = V(66, 692, 21);
     for (const f of [V(80.5, 714, 0), V(48, 693.5, 0), V(77, 683.5, 0)]) beam(f, top, 1.1, .35, steel, id);
@@ -39,5 +43,6 @@ export function landmarks(d: Data, ids: Record<string, number>) {
     const w = new THREE.ExtrudeGeometry(new THREE.Shape([[-9, 1], [0, -7], [7, 0], [6, 1], [0, -5], [-8, 2.4]].map(p => new THREE.Vector2(...p as [number, number]))), { depth: 8, bevelEnabled: false }); w.rotateX(-Math.PI / 2); add(w, white, 66, y, -691, 0, id);
     for (const f of [V(72, 704, 9), V(54.5, 694, 9), V(68, 684.5, 9)]) beam(f, top, .1, .1, steel);
     const st = new THREE.Shape([[80, 712], [49, 693], [67, 681], [84, 689]].map(p => new THREE.Vector2(p[0] - 66, p[1] - 692))), se = new THREE.ExtrudeGeometry(st, { depth: 1, bevelEnabled: false }); se.rotateX(-Math.PI / 2); add(se, stone, 66, y - .3, -692, 0, id); }
-  return { group: g, pick };
+  const dim = (on: boolean) => all.forEach(({ m, c }) => { m.color.set(c); if (on) m.color.lerp(new THREE.Color(0xb9b9b9), .85); });
+  return { group: g, pick, dim };
 }

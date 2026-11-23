@@ -13,15 +13,15 @@ async function boot() {
   try { r = new THREE.WebGLRenderer({ canvas, antialias: true, logarithmicDepthBuffer: false, powerPreference: 'high-performance' }); }
   catch { throw new Error('This page needs WebGL 2. Turn on hardware acceleration or try another browser.'); }
   const d = await loadData((f, m) => { $('#lbar').style.width = f * 100 + '%'; $('#lmsg').textContent = m; });
-  r.toneMapping = THREE.NoToneMapping; r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap; r.shadowMap.autoUpdate = false;
+  r.toneMapping = THREE.NoToneMapping; r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFShadowMap; r.shadowMap.autoUpdate = false;
   const scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(42, 1, 2, 16000), ctl = new MapControls(cam, canvas);
   ctl.enableDamping = true; ctl.dampingFactor = .12; ctl.maxPolarAngle = 1.5; ctl.minDistance = 30; ctl.maxDistance = 5200; ctl.zoomToCursor = true; ctl.screenSpacePanning = false;
-  const sun = new THREE.DirectionalLight(0xffffff, 3), hemi = new THREE.HemisphereLight(0xcfe0f5, 0xa39a88, 1.3); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -.0006; sun.shadow.normalBias = .6; scene.add(sun, sun.target, hemi); scene.fog = new THREE.Fog(0xcfdcec, 4500, 14000);
-  const campus = new Campus(d, r.capabilities.getMaxAnisotropy()); await campus.build(); scene.add(campus.group);
+  const sun = new THREE.DirectionalLight(0xffffff, 3), hemi = new THREE.HemisphereLight(0xe6f1fb, 0xc9c2b0, 1.3); sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -.0006; sun.shadow.normalBias = .6; scene.add(sun, sun.target, hemi); scene.fog = new THREE.Fog(0xcfdcec, 4500, 14000);
+  const campus = new Campus(d); campus.build(); scene.add(campus.group);
   const byCode = new Map<string, Bld>(), ids: Record<string, number> = {}; for (const b of d.blds) for (const o of b.off ?? []) { if (!byCode.has(o.c) || b.h * Math.sqrt(b.area) > byCode.get(o.c)!.h * Math.sqrt(byCode.get(o.c)!.area)) { byCode.set(o.c, b); ids[o.c] = b.i; } }
-  const lm = landmarks(d, ids); scene.add(lm.group);
-  const picker = new Picker(campus.roofGeos, lm.pick, []);
-  let dirty = 2, sel: Bld | null = null, filter: string | null = null, shadowKey = '', walk = false, W = 1, H = 1; const need = () => { dirty = 2; }; campus.onchange = need;
+  const lm = landmarks(d, ids, campus.mats); scene.add(lm.group);
+  const picker = new Picker(campus.pickGeos, lm.pick, []);
+  let dirty = 2, sel: Bld | null = null, filter: string | null = null, shadowKey = '', walk = false, W = 1, H = 1; const need = () => { dirty = 2; };
   // --- camera -----------------------------------------------------------------
   const HOME = { t: new THREE.Vector3(640, 38, -130), p: new THREE.Vector3(470, 760, 900) }; let fly: null | { t0: number; dur: number; p0: THREE.Vector3; p1: THREE.Vector3; a0: THREE.Vector3; a1: THREE.Vector3 } = null;
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -34,8 +34,8 @@ async function boot() {
   const setTime = (h: number) => {
     const lat = .7055, dec = .26, ha = (h - 13.8) / 24 * Math.PI * 2, el = Math.asin(Math.sin(lat) * Math.sin(dec) + Math.cos(lat) * Math.cos(dec) * Math.cos(ha)), az = Math.atan2(Math.sin(ha), Math.cos(ha) * Math.sin(lat) - Math.tan(dec) * Math.cos(lat));
     const day = THREE.MathUtils.smoothstep(el, -.1, .2), gold = 1 - THREE.MathUtils.smoothstep(el, .05, .55), e = Math.max(el, .16); sdir.set(-Math.sin(az) * Math.cos(e), Math.sin(e), Math.cos(az) * Math.cos(e));
-    sun.color.setRGB(1, 1 - .3 * gold, 1 - .55 * gold).lerp(new THREE.Color(.45, .55, .85), 1 - day); sun.intensity = .3 + 1.75 * day; hemi.intensity = .4 + 1.35 * day; hemi.color.set(0xcfe0f5).lerp(new THREE.Color(0x27365c), 1 - day);
-    const sky = new THREE.Color(0xc3d7ee).lerp(new THREE.Color(0xf0c39a), gold * day * .75).lerp(new THREE.Color(0x0d1526), 1 - day); scene.background = sky; (scene.fog as THREE.Fog).color.copy(sky); campus.mats.u.uNight.value = 1 - day;
+    sun.color.setRGB(1, 1 - .3 * gold, 1 - .55 * gold).lerp(new THREE.Color(.5, .6, 1), 1 - day); sun.intensity = .35 + 1.45 * day; hemi.intensity = .62 + 1.18 * day; hemi.color.set(0xe6f1fb).lerp(new THREE.Color(0x4a5fa8), 1 - day);
+    const sky = new THREE.Color(0xa9dcf6).lerp(new THREE.Color(0xffc08a), gold * day * .75).lerp(new THREE.Color(0x16204a), 1 - day); scene.background = sky; (scene.fog as THREE.Fog).color.copy(sky); campus.setNight(1 - day);
     const hh = Math.floor(h), mm = Math.round((h - hh) * 60); $('#timeout').textContent = `${(hh + 11) % 12 + 1}${mm ? ':' + String(mm).padStart(2, '0') : ''} ${hh < 12 ? 'AM' : 'PM'}`; shadowKey = ''; need();
   };
   const ti = $<HTMLInputElement>('#time'); ti.oninput = () => setTime(+ti.value); setTime(+ti.value);
@@ -61,7 +61,7 @@ async function boot() {
     if (b && (b.off || b.name)) { tip.textContent = b.off ? `${b.off.map(o => o.n).join(', ')} · ${tag(b)} · ${title(b)}` : title(b); tip.hidden = false; tip.style.transform = `translate(${Math.min(hx + 14, W - tip.offsetWidth - 8)}px,${Math.min(hy + 16, H - 40)}px)`; } else tip.hidden = true;
   };
   search(d.blds, b => select(b, true));
-  chips(d.blds, c => { filter = c; campus.mats.u.uDim.value = c ? 1 : 0; states(); need(); });
+  chips(d.blds, c => { filter = c; campus.mats.u.uDim.value = c ? 1 : 0; lm.dim(!!c); states(); need(); });
   // --- buttons --------------------------------------------------------------------
   const az = () => Math.atan2(cam.position.x - ctl.target.x, cam.position.z - ctl.target.z);
   const orbit = (pol: number, a = az()) => { const R = cam.position.distanceTo(ctl.target); flyTo(ctl.target.clone(), new THREE.Vector3(Math.sin(a) * Math.sin(pol), Math.cos(pol), Math.cos(a) * Math.sin(pol)).multiplyScalar(R).add(ctl.target), 700); };
@@ -108,10 +108,10 @@ async function boot() {
       const want = cam.position.y > 900 ? 12 : 2; if (cam.near !== want) { cam.near = want; cam.updateProjectionMatrix(); }
     }
     hover(now); if (dirty <= 0) return; dirty--;
-    campus.update(cam, walk ? cam.position : ctl.target); shadows(); r.render(scene, cam); stats.frames++; stats.calls = r.info.render.calls; stats.tris = r.info.render.triangles; drawLabels(); needle.style.transform = `rotate(${walk ? yaw : az()}rad)`;
+    campus.update(cam); shadows(); r.render(scene, cam); stats.frames++; stats.calls = r.info.render.calls; stats.tris = r.info.render.triangles; drawLabels(); needle.style.transform = `rotate(${walk ? yaw : az()}rad)`;
   };
   requestAnimationFrame(frame); $('#loading').classList.add('done'); setTimeout(() => $('#loading').remove(), 600); setTimeout(() => $('#hint').classList.add('gone'), 12000);
   const fromHash = () => { const c = decodeURIComponent(location.hash.slice(1)).toUpperCase(), b = byCode.get(c) ?? d.blds.find(x => x.off?.some(o => o.n === c)); if (b) select(b, true); }; fromHash(); addEventListener('hashchange', fromHash);
-  Object.assign(window as unknown as Record<string, unknown>, { __app: { d, cam, ctl, select, byCode, campus, stats, need, setTime, get sel() { return sel; }, screen(b: Bld, up = .9) { v.set(b.x, (b.z ?? 0) + b.h * up, -b.y).project(cam); return [(v.x + 1) / 2 * W, (1 - v.y) / 2 * H]; }, idle: () => !fly && dirty <= 0 && !campus.pending } });
+  Object.assign(window as unknown as Record<string, unknown>, { __app: { d, cam, ctl, select, byCode, campus, stats, need, setTime, get sel() { return sel; }, screen(b: Bld, up = .9) { v.set(b.x, (b.z ?? 0) + b.h * up, -b.y).project(cam); return [(v.x + 1) / 2 * W, (1 - v.y) / 2 * H]; }, idle: () => !fly && dirty <= 0 } });
 }
 boot().catch(e => { console.error(e); $('#lmsg').textContent = e?.message ?? 'Could not load the campus data.'; $('#loading').classList.add('err'); });

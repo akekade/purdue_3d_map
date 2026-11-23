@@ -12,3 +12,5 @@ node["natural"="tree"]({bb});way["aeroway"]({bb});way["amenity"~"fountain|parkin
 nwr["tourism"="artwork"]({bb});nwr["man_made"]({bb});way["landuse"]({bb}););out geom;'''
 get('https://overpass-api.de/api/interpreter', 'osm.json', urllib.parse.urlencode({'data': q}).encode())
 get('https://web.archive.org/web/20260216192211id_/https://www.purdue.edu/auxiliary-services/documents/wl-building-list.pdf', 'wl-building-list.pdf')
+q2 = f'''[out:json][timeout:200];(way["railway"~"rail|spur"]({bb});relation["highway"="pedestrian"]({bb});way["place"="square"]({bb});relation["amenity"="parking"]({bb});relation["landuse"]({bb}););out geom;'''
+get('https://overpass-api.de/api/interpreter', 'osm2.json', urllib.parse.urlencode({'data': q2}).encode())

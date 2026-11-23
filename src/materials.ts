@@ -1,79 +1,74 @@
 import * as THREE from 'three';
 import type { Data } from './data';
-/** Per-building data texture: 4 texels each: [wall, style] [trim, floors] [floorHeight*20, seed, purdue, state] [photo offset x, y, base height] */
+/** Per-building data texture, 4 texels each: [wall, style] [trim, floors] [floorHeight*20, seed, purdue, state] [unused] */
 export class Mats {
   tex: THREE.DataTexture; arr: Uint8Array; w = 1024;
-  u = { uMat: { value: null as unknown as THREE.Texture }, uHov: { value: -1 }, uNight: { value: 0 }, uDim: { value: 0 }, uLean: { value: new THREE.Matrix3() } };
+  u = { uMat: { value: null as unknown as THREE.Texture }, uHov: { value: -1 }, uNight: { value: 0 }, uDim: { value: 0 }, uLamp: { value: null as unknown as THREE.Texture }, uExt: { value: new THREE.Vector4() } };
+  grad: THREE.DataTexture;
   constructor(d: Data) {
     const h = Math.ceil(d.meta.nb * 4 / this.w); this.arr = new Uint8Array(this.w * h * 4); this.arr.set(d.mats);
-    this.tex = new THREE.DataTexture(this.arr, this.w, h, THREE.RGBAFormat, THREE.UnsignedByteType);
-    const [a, b] = d.meta.lean; this.u.uLean.value.set(a[1], a[2], a[3], b[1], b[2], b[3], 0, 0, 0);
-    this.tex.needsUpdate = true; this.u.uMat.value = this.tex;
+    this.tex = new THREE.DataTexture(this.arr, this.w, h, THREE.RGBAFormat, THREE.UnsignedByteType); this.tex.needsUpdate = true; this.u.uMat.value = this.tex;
+    // three flat light bands give the cartoon shading
+    this.grad = new THREE.DataTexture(new Uint8Array([150, 205, 255]), 3, 1, THREE.RedFormat); this.grad.minFilter = this.grad.magFilter = THREE.NearestFilter; this.grad.needsUpdate = true;
+    const m = d.meta; this.u.uExt.value.set(m.x0, m.y0, m.x1 - m.x0, m.y1 - m.y0);
   }
+  toon(o: THREE.MeshToonMaterialParameters = {}) { return new THREE.MeshToonMaterial({ gradientMap: this.grad, ...o }); }
   setState(i: number, v: number) { this.arr[i * 16 + 11] = v; }
   flush() { this.tex.needsUpdate = true; }
 }
-const COMMON = `uniform sampler2D uMat;uniform float uHov,uNight,uDim;flat varying int vB;varying vec3 vW;
+const COMMON = `uniform sampler2D uMat,uLamp;uniform float uHov,uNight,uDim;uniform vec4 uExt;flat varying int vB;varying vec3 vW;
 vec4 matTex(int b,int k){int i=b*4+k;return texelFetch(uMat,ivec2(i%1024,i/1024),0);}
 vec3 lin(vec3 c){return pow(c,vec3(2.2));}
 float h21(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}
-vec3 mark(vec3 c,float st){ if(uDim>.5&&st<.5){float g=dot(c,vec3(.3,.5,.2));c=mix(c,vec3(g*.45+.16),.82);} return c;}`;
+vec3 vivid(vec3 c){float g=dot(c,vec3(.3,.55,.15));return clamp(mix(vec3(g),c,1.22)*1.08,0.,1.);}
+vec3 lamp(){return vec3(1.,.78,.42)*texture2D(uLamp,(vec2(vW.x,-vW.z)-uExt.xy)/uExt.zw).r*uNight;}
+vec3 mark(vec3 c,float st){ if(uDim>.5&&st<.5){float g=dot(c,vec3(.3,.5,.2));c=mix(c,vec3(g*.35+.34),.85);} return c;}\n`;
 const VERT = `attribute float bid;flat varying int vB;varying vec3 vW;\n`;
 function hook(m: THREE.Material, u: Record<string, THREE.IUniform>, f: (s: { vertexShader: string; fragmentShader: string }) => void, key: string) {
   m.onBeforeCompile = s => { Object.assign(s.uniforms, u); f(s); }; m.customProgramCacheKey = () => key;
 }
 const SEL = `#include <opaque_fragment>
-if(matTex(vB,2).a*255.>1.5)gl_FragColor.rgb=mix(gl_FragColor.rgb,vec3(1.,.72,.16),.46);else if(abs(float(vB)-uHov)<.5)gl_FragColor.rgb=mix(gl_FragColor.rgb,vec3(1.,.83,.42),.26);`;
+if(matTex(vB,2).a*255.>1.5)gl_FragColor.rgb=mix(gl_FragColor.rgb,vec3(1.,.72,.16),.5);else if(abs(float(vB)-uHov)<.5)gl_FragColor.rgb=mix(gl_FragColor.rgb,vec3(1.,.83,.42),.3);`;
+/** Plain coloured walls with simple window shapes that light up at night. */
 export function wallMaterial(mats: Mats) {
-  const m = new THREE.MeshLambertMaterial();
+  const m = mats.toon();
   hook(m, mats.u, s => {
-    s.vertexShader = VERT + 'attribute vec3 wuv;varying vec3 vU;\n' + s.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvB=int(bid+.5);vU=wuv;vW=position;');
-    s.fragmentShader = COMMON + 'varying vec3 vU;vec3 gEm;\n' + s.fragmentShader.replace('#include <map_fragment>', `
-vec4 a0=matTex(vB,0),a1=matTex(vB,1),a2=matTex(vB,2);int style=int(a0.a*255.+.5);
-vec3 wall=lin(a0.rgb),trim=lin(a1.rgb);float fls=a1.a*255.,fh=a2.r*255./20.,u=vU.x,len=vU.y,h=vU.z;
-float px=max(length(vec2(dFdx(u),dFdy(u))),length(vec2(dFdx(h),dFdy(h))));float far=smoothstep(.35,1.5,px);
-vec3 c=wall;gEm=vec3(0.);float fy=fract(h/fh),fl=floor(h/fh);float ok=step(h,fls*fh)*step(2.2,len);
-vec3 glassC=mix(vec3(.05,.075,.10),vec3(.16,.22,.28),.5+.5*sin(fl*2.1+floor(u/3.)));
-float brick=smoothstep(.12,.02,px);float row=floor(h/.22);
-float grain=h21(vec2(floor(u/.45+mod(row,2.)*.5),row))*brick+(1.-brick)*.5;
-if(style==5){c*=.93+.07*step(.5,fract(u/.8))*(1.-far);if(h<.8)c*=.85;}
-else if(style==4){float o=step(.34,fy)*step(fy,.82)*ok;float pil=step(.07,fract(u/8.5));c=mix(c,vec3(.05),o*pil*(1.-far*.35)*.9);}
-else{
- if(style!=2)c*=.91+.18*grain;
- float pitch=style==2?1.6:(style==1?3.:(a2.b>.002?3.4:3.9));float n=max(1.,floor(len/pitch));float q=u/len*n,fx=fract(q),id=floor(q);
- float w=0.,fr=0.;
- if(style==0){w=step(.27,fx)*step(fx,.73)*step(.27,fy)*step(fy,.80);float o=step(.23,fx)*step(fx,.77)*step(.20,fy)*step(fy,.86);fr=o-w;}
- else if(style==1){w=step(.36,fx)*step(fx,.64)*step(3.,h);fr=step(.31,fx)*step(fx,.69)*step(3.,h)-w;float sp=step(.86,fy);c=mix(c,c*.8,w*sp);}
- else if(style==2){w=step(.07,fx)*step(fx,.93)*step(.13,fy);glassC=mix(vec3(.10,.17,.23),trim,.38);}
- else if(style==3){w=step(.42,fx)*step(fx,.58)*step(.35,fy)*step(fy,.7)*step(fl,1.5)*step(1.,mod(id,3.));fr=0.;}
- w*=ok;fr*=ok;vec3 near=mix(mix(c,trim,fr*.75),glassC,w);
- float cov=style==0?.24:(style==1?.26:(style==2?.8:.03));vec3 avg=mix(c,glassC,cov*ok);c=mix(near,avg,far);
- float lit=step(.52,h21(vec2(id+float(vB)*.37,fl+floor(float(vB)*.11))));gEm=vec3(1.,.74,.40)*uNight*lit*mix(w,cov*ok,far)*.85;
- if(a2.b>.002&&style<2&&h<1.1)c=mix(c,trim*.82,.85*(1.-far*.5));
+    s.vertexShader = VERT + 'attribute vec4 wuv;varying vec4 vU;\n' + s.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvB=int(bid+.5);vU=wuv;vW=position;');
+    s.fragmentShader = COMMON + 'varying vec4 vU;vec3 gEm;\n' + s.fragmentShader.replace('#include <map_fragment>', `
+vec4 a0=matTex(vB,0),a1=matTex(vB,1),a2=matTex(vB,2);int style=int(a0.a*255.+.5);bool pu=a2.b>.002;
+vec3 wall=vivid(lin(a0.rgb)),trim=lin(a1.rgb);float fls=a1.a*255.,fh=a2.r*255./20.,u=vU.x,len=vU.y,h=vU.z,top=vU.w;
+float px=max(length(vec2(dFdx(u),dFdy(u))),length(vec2(dFdx(h),dFdy(h))));float far=smoothstep(.45,1.8,px);
+vec3 c=wall;gEm=vec3(0.);float fy=fract(h/fh),fl=floor(h/fh);float ok=step(0.,h)*step((fl+.9)*fh,top)*step(2.2,len);
+vec3 glassC=vec3(.16,.33,.48);
+if(style==4){float o=step(.36,fy)*step(fy,.8)*ok;c=mix(c,vec3(.10,.10,.12),o*(1.-far*.4));gEm=vec3(1.,.8,.5)*uNight*o*.3;}
+else if(style!=5){
+ float pitch=style==2?2.6:(style==1?3.4:(pu?4.2:4.0));float n=max(1.,floor(len/pitch));float q=u/len*n,fx=fract(q),id=floor(q),w=0.;
+ if(style==0)w=step(.28,fx)*step(fx,.72)*step(.28,fy)*step(fy,.78);
+ else if(style==1)w=step(.34,fx)*step(fx,.66)*step(3.,h);
+ else if(style==2){w=step(.08,fx)*step(fx,.92)*step(.14,fy)*step(fy,.94);glassC=vec3(.30,.55,.70);}
+ else w=step(.4,fx)*step(fx,.6)*step(.35,fy)*step(fy,.7)*step(fl,1.5)*step(1.,mod(id,3.));
+ w*=ok;float cov=(style==0?.22:(style==1?.3:(style==2?.66:.03)))*ok;vec3 near=mix(c,glassC,w);c=mix(near,mix(c,glassC,cov),far);
+ float lit=step(.38,h21(vec2(id+float(vB)*.37,fl+floor(float(vB)*.11))));gEm=vec3(1.,.80,.42)*uNight*mix(w*lit,cov*.62,far)*1.15;
 }
-diffuseColor.rgb=mark(c,a2.a*255.);`).replace('#include <emissivemap_fragment>', 'totalEmissiveRadiance+=gEm;').replace('#include <opaque_fragment>', SEL);
+if(pu&&style!=5){float cap=step(top-.75,h)+step(h,.9)*step(0.,top-4.);c=mix(c,trim,clamp(cap,0.,1.)*(1.-far*.5));gEm*=1.-step(top-.75,h);}
+c=mark(c,a2.a*255.);gEm+=c*lamp()*smoothstep(8.,0.,h)*.8;diffuseColor.rgb=c;`).replace('#include <emissivemap_fragment>', 'totalEmissiveRadiance+=gEm;').replace('#include <opaque_fragment>', SEL);
   }, 'wall');
   return m;
 }
-export interface TileU { [k: string]: THREE.IUniform; uMap: { value: THREE.Texture }; uRect: { value: THREE.Vector4 } }
-export function roofMaterial(mats: Mats, t: TileU) {
-  const m = new THREE.MeshLambertMaterial({ flatShading: true });
-  hook(m, { ...mats.u, ...t }, s => {
+export function roofMaterial(mats: Mats) {
+  const m = mats.toon({ vertexColors: true }); (m as unknown as { flatShading: boolean }).flatShading = true;
+  hook(m, mats.u, s => {
     s.vertexShader = VERT + s.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvB=int(bid+.5);vW=position;');
-    s.fragmentShader = COMMON + 'uniform sampler2D uMap;uniform vec4 uRect;uniform mat3 uLean;\n' + s.fragmentShader.replace('#include <map_fragment>', `
-vec4 a3=matTex(vB,3);vec2 en=vec2(vW.x,-vW.z);vec2 off=a3.rg*12.-6.+max(vW.y-a3.b*76.5,0.)*(uLean*vec3(1.,en/1000.)).xy;
-vec4 a0=matTex(vB,0),a2=matTex(vB,2);vec3 gn=normalize(cross(dFdx(vW),dFdy(vW)));
-vec3 rc=lin(texture2D(uMap,(en+off-uRect.xy)/uRect.zw).rgb);
-float steep=1.-smoothstep(.34,.5,abs(gn.y));diffuseColor.rgb=mark(mix(rc,lin(a0.rgb)*.92,steep),a2.a*255.);`).replace('#include <opaque_fragment>', SEL);
+    s.fragmentShader = COMMON + s.fragmentShader.replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb=mark(diffuseColor.rgb,matTex(vB,2).a*255.);').replace('#include <opaque_fragment>', SEL);
   }, 'roof');
   return m;
 }
-export function groundMaterial(mats: Mats, t: TileU) {
-  const m = new THREE.MeshLambertMaterial();
-  hook(m, { ...t, uDim: mats.u.uDim }, s => {
+export function groundMaterial(mats: Mats) {
+  const m = new THREE.MeshLambertMaterial({ vertexColors: true });
+  hook(m, mats.u, s => {
     s.vertexShader = 'varying vec3 vW;\n' + s.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvW=position;');
-    s.fragmentShader = 'uniform sampler2D uMap;uniform vec4 uRect;uniform float uDim;varying vec3 vW;\n' + s.fragmentShader.replace('#include <map_fragment>', `
-vec3 gc=pow(texture2D(uMap,(vec2(vW.x,-vW.z)-uRect.xy)/uRect.zw).rgb,vec3(2.2));if(uDim>.5)gc=mix(gc,vec3(dot(gc,vec3(.33))),.55)*.8;diffuseColor.rgb=gc;`);
+    s.fragmentShader = 'uniform sampler2D uLamp;uniform float uDim,uNight;uniform vec4 uExt;varying vec3 vW;\n' + s.fragmentShader.replace('#include <color_fragment>', `#include <color_fragment>
+if(uDim>.5)diffuseColor.rgb=mix(diffuseColor.rgb,vec3(dot(diffuseColor.rgb,vec3(.33))),.6);`).replace('#include <emissivemap_fragment>', 'totalEmissiveRadiance+=diffuseColor.rgb*vec3(1.,.78,.42)*texture2D(uLamp,(vec2(vW.x,-vW.z)-uExt.xy)/uExt.zw).r*uNight*1.15;');
   }, 'ground');
   return m;
 }
