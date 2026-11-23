@@ -1,0 +1,6 @@
+{"_comment":"Buildings newer than the 2017 LiDAR. m = height used; src explains the basis. All shown as estimated in the app.",
+"DUDL":{"m":22,"levels":5,"src":"5 stories (BSA project document)"},"LMBS":{"m":22,"levels":5,"src":"5 stories (BSA project document)"},
+"MRDS":{"m":25,"levels":7,"src":"6-8 floors (Purdue emergency preparedness page)"},"PKRF":{"m":20,"levels":6,"src":"6 floors (Purdue housing page)"},
+"HAGL":{"m":14,"levels":4,"src":"4 levels (OpenStreetMap)"},"HULL":{"m":8,"levels":2,"src":"2 levels (OpenStreetMap)"},
+"CHAS":{"m":17,"src":"estimate, no source found"},"CONV":{"m":20,"src":"estimate, no source found"},"ADPA":{"m":16,"src":"estimate, no source found"},"ADPB":{"m":16,"src":"estimate, no source found"},
+"BRUN":{"m":8,"src":"estimate, no source found"},"BRFM":{"m":8,"src":"estimate, no source found"},"DYE":{"m":7,"src":"estimate, no source found"},"HARF":{"m":11,"src":"estimate, no source found"}}

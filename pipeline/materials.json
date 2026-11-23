@@ -1,0 +1,34 @@
+{
+ "_comment": "Brick shades calibrated to pixel samples from Commons photos (Elliott 168,119,100; Armstrong 165,121,90; Heine 140,111,87; Bell Tower 136,90,61). conf: photo = wall colour checked against a photograph; described = published description; typical = assumed from Purdue's usual red brick or building type. style: 0 punched windows, 1 ribbon/vertical strips, 2 curtain glass, 3 few windows, 4 parking deck, 5 metal shed",
+ "default": {"wall":"#a5745f","trim":"#d6cab4","style":0,"conf":"typical","note":"Purdue's usual red brick with limestone trim"},
+ "photo": {
+  "UNIV":["#ac735c","#d9cdb6",0,"Red-orange brick, limestone trim, slate mansard"],
+  "CQE":["#ac755e","#dccfb6",0,"Red brick, limestone quoins"],"CQW":["#ac755e","#dccfb6",0,"Red brick, limestone quoins"],"CQS":["#ac755e","#dccfb6",0,"Red brick, limestone quoins and towers"],"CQNE":["#ac755e","#dccfb6",0,"Red brick, limestone trim"],"CQNW":["#ac755e","#dccfb6",0,"Red brick, limestone trim"],
+  "HOVD":["#a9745f","#ddd2bb",0,"Red brick with limestone portico"],
+  "ARMS":["#a5785c","#d8ccb6",0,"Red brick, limestone band, glass atrium"],
+  "ELLT":["#a87763","#cfc3ae",3,"Red brick over a limestone base"],
+  "KRAN":["#b3a99b","#8d8478",1,"Grey-tan limestone with vertical window strips"],
+  "MACK":["#b08565","#d9c9ae",3,"Tan brick and concrete, bronze dome"],
+  "MSEE":["#aa765f","#d9cbb2",0,"Red brick, limestone bands, red tile roof"],
+  "PHYS":["#a9785f","#d6c8ae",0,"Red brick, limestone trim, red tile eaves"],
+  "RHPH":["#9d785e","#d3c9b8",1,"Brown-red brick with narrow vertical windows"],
+  "PMU":["#a0695a","#d4c6ac",0,"Dark red brick with limestone entry"],
+  "PMUC":["#966658","#cfc2ac",0,"Red brick with limestone quoins"],
+  "CREC":["#d8d2c6","#7f9fb3",2,"Glass curtain wall, light stone fins, red brick wings"],
+  "SCPA":["#e4dfd2","#4a3a30",3,"White concrete shell hung from dark steel legs"],
+  "STDM":["#8f9499","#b9b6ae",1,"Concrete and steel stands, glass press tower"],
+  "YONG":["#a9aba4","#7f9496",0,"Grey concrete frame with blue-green glass grid"],
+  "PAO":["#b98a66","#d9d3c8",3,"Tan-orange brick, pale metal fly tower"],
+  "VAWT":["#946658","#cbbda6",0,"Dark red brick, limestone trim, slate roof"],"WARN":["#946658","#cbbda6",0,"Dark red brick, limestone trim, slate roof"],"WOOD":["#946658","#cbbda6",0,"Dark red brick, limestone trim, slate roof"],
+  "BELL":["#96644b","#e4dccb",3,"Red brick shaft, limestone belfry, copper-brown roof"]
+ },
+ "described": {
+  "DUDL":["#a5745f","#7f9fb3",2,"Brick with large glass curtain walls and vertical sunshades"],"LMBS":["#a5745f","#7f9fb3",2,"Brick with large glass curtain walls and vertical sunshades"],
+  "MATH":["#a5745f","#d6cab4",1,"Brick and limestone tower"],
+  "BHEE":["#a5745f","#d6cab4",0,"Traditional red brick and limestone"],
+  "ME":["#a5745f","#d6cab4",0,"Red brick, limestone, metal arch on the 2011 wing"],
+  "PSYC":["#b8b0a2","#8b857b",1,"1960s style, departs from Purdue's brick (exact shade assumed)"],
+  "JNSN":["#b8b0a2","#8b857b",1,"1960s style, departs from Purdue's brick (exact shade assumed)"],
+  "BRK":["#b7b3aa","#7f9fb3",2,"Discovery Park: glazed, very little brick (exact shade assumed)"],"BIND":["#b7b3aa","#7f9fb3",2,"Discovery Park: glazed, very little brick (exact shade assumed)"],"MRGN":["#b7b3aa","#7f9fb3",2,"Discovery Park: glazed, very little brick (exact shade assumed)"],"MANN":["#b7b3aa","#7f9fb3",2,"Discovery Park: glazed, very little brick (exact shade assumed)"],"DLR":["#b7b3aa","#7f9fb3",2,"Discovery Park: glazed, very little brick (exact shade assumed)"]
+ }
+}

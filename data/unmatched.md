@@ -1,0 +1,105 @@
+# Listed Purdue buildings with no identified footprint
+
+- 1737 W19 19 Waldron Street
+- 1741 2550 2550 Northwestern Avenue
+- 1057 523R 523 Russell Street
+- 1721 541H 541 Hayes
+- 1360 844S 844 South River Road
+- 1006 AIDC Agricultural Information Distr Ctr
+- 1374 AEV Airport Emergency Vehicle Building
+- 1012 ASB1 Airport Storage Building No. 1
+- 1417 BTV Boiler Television Building
+- 1691 BLE1 Bowen Labs Experiment 1
+- 1692 BLE2 Bowen Labs Experiment 2
+- 1693 BLE3 Bowen Labs Experiment 3
+- 1662 BLSS Bowen Labs Storage Shed
+- 1335 BMSN Byproduct Material Storage Bldg - North
+- 1306 BMSE Byproduct Material Storage Building-East
+- 1297 BMSW Byproduct Material Storage Building-West
+- 1734 CAI Center for Aging Infrastructure Research Equipment Storage
+- 1640 COAL Coal Handling Control/Fire Pump Bldg
+- 1338 CTEB Cooling Tower Equipment Building
+- 1241 ZL6 Fuel Conditioning Building
+- 1060 GAS Gas Meter-at Airport
+- 1072 GSMB Golf Storage Maintenance Barn
+- 1650 PRIX Grand Prix Track Restroom Facility
+- 1735 G333 Grant 333
+- 1340 GRVL Gravel Pit Equipment Storage Building
+- 1653 GMPS Grounds Maintenance Pesticide Storage Facility
+- 1462 HGR8 Hangar No. 8
+- 1637 HESB Heavy Equipment Storage Building
+- 1341 HRTP Horticulture Park Barn
+- 1687 IMI Indiana Manufacturing Institute - IMI
+- 1427 INOK INOK Investments Warehouse
+- 1397 TURF Intercollegiate Athletic Sports Turf Bdg
+- 1098 INSS Intramural Storage Shed
+- 1402 WRIT John S. Wright Forestry Center
+- 1646 KPNR Kepner Building
+- 1654 KPTC Kurz Purdue Technology Center
+- 1391 LMSA Laboratory Materials Storage Annex
+- 1375 LMST Laboratory Materials Storage Trailer
+- 1825 LG Lambert Green Dining
+- 1696 LOLC Land O Lakes Center for Experiential Learning and Purina Pav
+- 1106 LINS Line Shack (at Airport)
+- 1354 MMS2 Materials Management Storage Building 2
+- 1355 MMS3 Materials Management Storage Building 3
+- 1365 OLMN Melvin L. Ollman Golf Cart Barn
+- 1368 NWSS Northwest Campus Substation
+- 1729 NWSB Northwest Storage Barn
+- 1216 TER1 Oliver Perkins Terry Garage
+- 1819 PJEC Patty Jischke Early Care & Ed Ctr
+- 1299 PEST Pesticide Applicator Training Facility
+- 1669 BBCH Purdue Baseball Clubhouse
+- 1668 BBPB Purdue Baseball Press Box
+- 1379 TRE1 Purdue Grounds
+- 1376 PIT1 Purdue International Teleport Bldg 1
+- 1720 520F Purdue Musical Organization Warehouse
+- 1677 SBCH Purdue Softball Clubhouse
+- 1678 SBPB Purdue Softball Press Box
+- 1371 PTC Purdue Technology Center
+- 1429 PWB Purdue West - Building B
+- 1636 PWC Purdue West - Building C
+- 1369 PWF Purdue West - Building F
+- 1670 SOCC Purdue Womens Soccer Building
+- 1420 REMS Radiological & Environ Mgmt Storage Bldg
+- 2218 RAD Ross-Ade Dining
+- 1283 RALR Ross-Ade Stadium Locker Room
+- 1725 R414 Russell 414
+- 1638 SLT Salt Storage Building
+- 1366 VOIN Samuel Voinoff Golf Pavillion
+- 1383 SSWA Self Storage Warehouse A
+- 1406 SSWB Self Storage Warehouse B
+- 1722 SSWC Self Storage Warehouse C
+- 1736 S410 Steely 410
+- 1733 SFOF Swift Fuels Operations Facility
+- 1219 TH-2 Tee-Hangar No. 2
+- 1220 TH-3 Tee-Hangar No. 3
+- 1221 TH-4 Tee-Hangar No. 4
+- 1222 TH-5 Tee-Hangar No. 5
+- 1295 TH-6 Tee-Hangar No. 6
+- 1667 TH-7 Tee-Hangar No. 7
+- 1416 SPUR Tom Spurgeon Golf Training Center
+- 1380 TPB Track Press Box
+- 1253 TTS Track Toilet + Storage Building
+- 1233 TRAM Transmitter Building WBAA Radio AM
+- 1331 TRFM Transmitter Building WBAA Radio FM
+- 1343 TREE Tree Nursery Service Building
+- 1293 SAT Univ Residence Halls Satellite Tran Bldg
+- 1386 VULC Vulcan Building
+- 1726 WALD Waldron 125
+- 1820 WSAN Waldron Square Apartments North
+- 1821 WSAS Waldron Square Apartments South
+- 1146 WH-2 Well House No. 2
+- 1148 WH-4 Well House No. 4
+- 1149 WH-5 Well House No. 5
+- 1150 WH-6 Well House No. 6
+- 1274 WH-7 Well House No. 7
+- 1275 WH-8 Well House No. 8
+- 1659 WH-9 Well House No. 9
+- 1286 WWG Westwood Garage
+- 1288 WGLR Womens Golf Locker Room
+- 1824 ZL9 Zucrow High Speed Propulsion Lab
+- 1242 ZS01 Zucrow Storage Shed 1
+- 1251 ZS10 Zucrow Storage Shed 10
+- 1245 ZS04 Zucrow Storage Shed 4
+- 1250 ZS09 Zucrow Storage Shed 9

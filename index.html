@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Purdue Campus 3D</title>
+<meta name="description" content="Interactive 3D model of Purdue's West Lafayette campus. Click a building for its number.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%231c1a17'/><path d='M7 24V13l6-4v15zm8 0V6l10 6v12z' fill='%23cfb277'/></svg>">
+</head>
+<body>
+<canvas id="gl" aria-label="3D map of campus"></canvas>
+<canvas id="labels" aria-hidden="true"></canvas>
+<div id="loading"><div class="lbox"><b>Purdue Campus 3D</b><span id="lmsg">Loading campus…</span><i><u id="lbar"></u></i></div></div>
+<header id="top">
+  <div id="searchbox" role="search">
+    <svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="9" cy="9" r="5.5"/><path d="m13.2 13.2 4 4"/></svg>
+    <input id="q" type="search" placeholder="Building number, code or name" autocomplete="off" spellcheck="false" aria-label="Search buildings" aria-controls="results">
+    <kbd>/</kbd>
+  </div>
+  <ul id="results" role="listbox" hidden></ul>
+  <nav id="chips" aria-label="Filter by type"></nav>
+</header>
+<aside id="panel" hidden aria-live="polite"></aside>
+<div id="hint">Drag to move · right-drag to rotate · scroll to zoom · click a building</div>
+<div id="tip" hidden></div>
+<div id="tools" role="toolbar" aria-label="View controls">
+  <button id="b-north" title="Face north"><svg viewBox="0 0 24 24"><g id="needle"><path d="M12 3l4 9H8z" fill="#c8452f"/><path d="M12 21l4-9H8z" fill="#9a948a"/></g></svg></button>
+  <button id="b-in" title="Zoom in">+</button>
+  <button id="b-out" title="Zoom out">−</button>
+  <button id="b-top" title="View from straight above">Top</button>
+  <button id="b-tilt" title="Angled view">3D</button>
+  <button id="b-home" title="Reset view">Reset</button>
+  <button id="b-walk" title="Walk around at street level">Walk</button>
+</div>
+<div id="bottom">
+  <label>Time <output id="timeout">2 PM</output><input id="time" type="range" min="5" max="22" step="0.25" value="14" aria-label="Time of day"></label>
+  <label class="chk"><input id="c-labels" type="checkbox" checked> Labels</label>
+  <label class="chk"><input id="c-trees" type="checkbox" checked> Trees</label>
+</div>
+<div id="walkui" hidden><span>Walking: drag to look, <b>W A S D</b> or arrows to move, Shift to run</span><button id="b-exit">Exit walk</button>
+  <div id="pad"><button data-k="w">▲</button><button data-k="a">◀</button><button data-k="s">▼</button><button data-k="d">▶</button></div></div>
+<footer id="credit">Unofficial student project. Map © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>, LiDAR USGS, imagery State of Indiana 2023</footer>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>
